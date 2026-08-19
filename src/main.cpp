@@ -46,6 +46,25 @@ i2s_pin_config_t pin_config = {
     .data_out_num = I2S_MIC_SERIAL_DATA_OUT,
     .data_in_num = I2S_MIC_SERIAL_DATA_IN};
 
+
+//TODO: put all processing into another .h file later
+void process_audio(int32_t* samples, size_t num_samples) {
+
+  for (size_t i = 0; i < num_samples; ++i) {
+    //test with gain adjustment
+    samples[i] = samples[i] * 0.5; 
+  } 
+
+  //always end by clamping the samples to the range of int32_t
+  for (size_t i = 0; i < num_samples; ++i) {
+    if (samples[i] > INT32_MAX) {
+      samples[i] = INT32_MAX;
+    } else if (samples[i] < INT32_MIN) {
+      samples[i] = INT32_MIN;
+    }
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   CLOGI << "setup";
@@ -62,41 +81,6 @@ void setup() {
     CLOGE << "i2s_set_pin failed: " << err;
     return;
   }
-
- // This test is playing the included christmas pcm data, not necessary since it's going to be pitch shifted due to being 16 bit pcm data. 
-
-  // Serial.println("Starting I2S microphone test...");
-
-  // size_t bytes_written = 0;
-  // size_t total_bytes = sizeof(_MERRY_CHRISTMAS_PCM);
-  // size_t bytes_to_write = total_bytes;
-  // const uint8_t* pcm_data = (const uint8_t*)_MERRY_CHRISTMAS_PCM;
-  
-  // while (bytes_to_write > 0) {
-  //   size_t chunk_size = (bytes_to_write > 1024) ? 1024 : bytes_to_write;
-  //   size_t chunk_written = 0;
-    
-  //   err = i2s_write(I2S_PORT, pcm_data + (total_bytes - bytes_to_write), 
-  //                   chunk_size, &chunk_written, pdMS_TO_TICKS(1000));
-    
-  //   if (err != ESP_OK) {
-  //     CLOGE << "i2s_write failed at offset " << (total_bytes - bytes_to_write) 
-  //           << ": " << err;
-  //     break;
-  //   }
-    
-  //   bytes_written += chunk_written;
-  //   bytes_to_write -= chunk_written;
-    
-  //   if (chunk_written == 0) {
-  //     CLOGW << "No bytes written, possible buffer full";
-  //     delay(10);
-  //   }
-  // }
-  
-  // CLOGI << "Total bytes written: " << bytes_written << "/" << total_bytes;
-  // delay(100);
-  // CLOGI << "setup OK - Audio should be playing now";
 }
 
 
@@ -105,8 +89,14 @@ void loop() {
     // read from the I2S device
   size_t bytes_read = 0;
 
+
   //the read/write loop is literally this simple i guess
   i2s_read(I2S_PORT, raw_samples, sizeof(int32_t) * SAMPLE_BUFFER_SIZE, &bytes_read, portMAX_DELAY);
+  //put audio processing here, passing raw_samples
+
+  process_audio(raw_samples, bytes_read / sizeof(int32_t));
+
+
   i2s_write(I2S_PORT, raw_samples, bytes_read, &bytes_read, portMAX_DELAY);
 
 }
