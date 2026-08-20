@@ -107,6 +107,13 @@ void loop() {
 
   //the read/write loop is literally this simple i guess
   i2s_read(I2S_PORT, raw_samples, sizeof(int32_t) * SAMPLE_BUFFER_SIZE, &bytes_read, portMAX_DELAY);
+    // dump the samples out to the serial channel.
+  // for (int i = 0; i < bytes_read / sizeof(int32_t); i++)
+  // {
+  //   //Serial.printf("%ld\n", raw_samples[i]);
+  //   //Serial.print(">frequency:");
+  //   Serial.println(raw_samples[i]);
+  // }
   i2s_write(I2S_PORT, raw_samples, bytes_read, &bytes_read, portMAX_DELAY);
 
 }
