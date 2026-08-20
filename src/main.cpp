@@ -26,8 +26,8 @@ namespace {
 #define I2S_MIC_SERIAL_DATA_OUT GPIO_NUM_9
 
 // don't mess around with this - definitely messing with this, need to combine the two i2s for speaker and mic into one "device"
-i2s_config_t i2s_config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_TX),
+static i2s_config_t i2s_config = {
+    .mode = static_cast<i2s_mode_t>(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_TX),
     .sample_rate = SAMPLE_RATE,
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -40,7 +40,7 @@ i2s_config_t i2s_config = {
     .fixed_mclk = 0};
 
 // and don't mess around with this - too late
-i2s_pin_config_t pin_config = {
+static i2s_pin_config_t pin_config = {
     .bck_io_num = I2S_MIC_SERIAL_CLOCK,
     .ws_io_num = I2S_MIC_LEFT_RIGHT_CLOCK,
     .data_out_num = I2S_MIC_SERIAL_DATA_OUT,
@@ -48,18 +48,18 @@ i2s_pin_config_t pin_config = {
 
 
 //TODO: put all processing into another .h file later
-void process_audio(int32_t* samples, size_t num_samples) {
+static void process_audio(int32_t* samples, const size_t num_samples) {
 
   for (size_t i = 0; i < num_samples; ++i) {
     //test with gain adjustment, but use a buffer value to prevent overflow
 
     float result = samples[i] * 2.0f; 
-    if (result > (float)INT32_MAX) {
-      result = (float)INT32_MAX;
-    } else if (result < (float)INT32_MIN) {
-      result = (float)INT32_MIN;
+    if (result > static_cast<float>(INT32_MAX)) {
+      result = static_cast<float>(INT32_MAX);
+    } else if (result < static_cast<float>(INT32_MIN)) {
+      result = static_cast<float>(INT32_MIN);
     }
-    samples[i] = (int32_t)result;
+    samples[i] = static_cast<int32_t>(result);
   } 
 
 
@@ -70,7 +70,7 @@ void setup() {
   CLOGI << "setup";
 
   // 安装I2S驱动 - leaving this cause why not, means install i2S driver
-  esp_err_t err = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+  esp_err_t err = i2s_driver_install(I2S_PORT, &i2s_config, 0, nullptr);
   if (err != ESP_OK) {
     CLOGE << "i2s_driver_install failed: " << err;
     return;
@@ -84,7 +84,7 @@ void setup() {
 }
 
 
-int32_t raw_samples[SAMPLE_BUFFER_SIZE];
+static int32_t raw_samples[SAMPLE_BUFFER_SIZE];
 void loop() {
     // read from the I2S device
   size_t bytes_read = 0;
