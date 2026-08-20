@@ -51,18 +51,18 @@ i2s_pin_config_t pin_config = {
 void process_audio(int32_t* samples, size_t num_samples) {
 
   for (size_t i = 0; i < num_samples; ++i) {
-    //test with gain adjustment
-    samples[i] = samples[i] * 0.5; 
+    //test with gain adjustment, but use a buffer value to prevent overflow
+
+    float result = samples[i] * 2.0f; 
+    if (result > (float)INT32_MAX) {
+      result = (float)INT32_MAX;
+    } else if (result < (float)INT32_MIN) {
+      result = (float)INT32_MIN;
+    }
+    samples[i] = (int32_t)result;
   } 
 
-  //always end by clamping the samples to the range of int32_t
-  for (size_t i = 0; i < num_samples; ++i) {
-    if (samples[i] > INT32_MAX) {
-      samples[i] = INT32_MAX;
-    } else if (samples[i] < INT32_MIN) {
-      samples[i] = INT32_MIN;
-    }
-  }
+
 }
 
 void setup() {
@@ -92,13 +92,9 @@ void loop() {
 
   //the read/write loop is literally this simple i guess
   i2s_read(I2S_PORT, raw_samples, sizeof(int32_t) * SAMPLE_BUFFER_SIZE, &bytes_read, portMAX_DELAY);
-    // dump the samples out to the serial channel.
-  // for (int i = 0; i < bytes_read / sizeof(int32_t); i++)
-  // {
-  //   //Serial.printf("%ld\n", raw_samples[i]);
-  //   //Serial.print(">frequency:");
-  //   Serial.println(raw_samples[i]);
-  // }
+    
+  process_audio(raw_samples, bytes_read / sizeof(int32_t));
+
   i2s_write(I2S_PORT, raw_samples, bytes_read, &bytes_read, portMAX_DELAY);
 
 }
