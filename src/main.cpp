@@ -48,12 +48,12 @@ static i2s_pin_config_t pin_config = {
 
 
 //TODO: put all processing into another .h file later
-static void process_audio(int32_t* samples, const size_t num_samples) {
+static void process_audio(int32_t* samples, const size_t num_samples, const float gain = 1.0f, const float phase_offset = 0.0f) {
 
   for (size_t i = 0; i < num_samples; ++i) {
     //test with gain adjustment, but use a buffer value to prevent overflow
 
-    float result = samples[i] * 2.0f; 
+    float result = samples[i] * gain * sin(phase_offset);
     if (result > static_cast<float>(INT32_MAX)) {
       result = static_cast<float>(INT32_MAX);
     } else if (result < static_cast<float>(INT32_MIN)) {
@@ -85,7 +85,15 @@ void setup() {
 
 
 static int32_t raw_samples[SAMPLE_BUFFER_SIZE];
+
+//phase accumulator for sine modulation and frequency for offset or whatever
+static float phase;
+static float carrier_freq = 60.0f;
 void loop() {
+  phase += 2.0f * M_PI * carrier_freq / SAMPLE_RATE;
+  if (phase > 2 * M_PI) {
+    phase -= 2 * M_PI;
+  }
     // read from the I2S device
   size_t bytes_read = 0;
 
@@ -93,7 +101,7 @@ void loop() {
   //the read/write loop is literally this simple i guess
   i2s_read(I2S_PORT, raw_samples, sizeof(int32_t) * SAMPLE_BUFFER_SIZE, &bytes_read, portMAX_DELAY);
     
-  process_audio(raw_samples, bytes_read / sizeof(int32_t));
+  process_audio(raw_samples, bytes_read / sizeof(int32_t), 2.0f, phase);
 
   i2s_write(I2S_PORT, raw_samples, bytes_read, &bytes_read, portMAX_DELAY);
 
